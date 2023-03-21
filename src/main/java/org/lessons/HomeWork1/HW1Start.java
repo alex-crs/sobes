@@ -5,7 +5,10 @@ import org.lessons.HomeWork1.cars.Lorry;
 import org.lessons.HomeWork1.person.Person;
 import org.lessons.HomeWork1.shapes.Canvas;
 import org.lessons.HomeWork1.shapes.Circle;
+import org.lessons.HomeWork1.shapes.Oval;
 import org.lessons.HomeWork1.shapes.Triangle;
+
+import java.util.HashMap;
 
 public class HW1Start {
     public static void main(String[] args) {
@@ -49,6 +52,13 @@ public class HW1Start {
         System.out.println(canvas);
         canvas.eraseAll();
         System.out.println(canvas);
+
+        Oval oval = new Oval("Овал");
+        canvas.draw(oval);
+        System.out.println(canvas);
+
+        HashMap<String, String> map = new HashMap<>();
+
     }
 
 
