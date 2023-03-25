@@ -44,6 +44,7 @@ public class AlterLinkedList<E> implements AlterList<E> {
     public void clear() {
         first = null;
         last = null;
+        size = 0;
     }
 
     @Override
@@ -99,7 +100,7 @@ public class AlterLinkedList<E> implements AlterList<E> {
         }
     }
 
-    private AlterNode<E> findNodeByElement(E e){
+    private AlterNode<E> findNodeByElement(E e) {
         int indexCount = 0;
         AlterNode<E> node = first;
         while (true) {
@@ -143,7 +144,7 @@ public class AlterLinkedList<E> implements AlterList<E> {
         removeLinks(node);
     }
 
-    private void removeLinks(AlterNode<E> node){
+    private void removeLinks(AlterNode<E> node) {
         AlterNode<E> previousElement = node.previous;
         AlterNode<E> nextElement = node.next;
         previousElement.next = nextElement;
@@ -179,6 +180,7 @@ public class AlterLinkedList<E> implements AlterList<E> {
             this.previous = previous;
         }
     }
+
     private class ListItr implements ListIterator<E> {
         private AlterNode<E> lastReturned;
         private AlterNode<E> next;
