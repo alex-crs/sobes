@@ -1,20 +1,20 @@
 package org.lessons.HomeWork3.PingPong;
 
-public class Table {
+public class Ball {
     private static volatile boolean pongSide;
     private static volatile boolean pingSide;
-    private static final Table table;
+    private static final Ball ball;
 
     static {
-        table = new Table();
+        ball = new Ball();
     }
 
-    private Table() {
+    private Ball() {
         pongSide = true;
     }
 
-    public synchronized static Table getTable() {
-        return table;
+    public synchronized static Ball getBall() {
+        return ball;
     }
 
     public synchronized int action(Racket racket) {

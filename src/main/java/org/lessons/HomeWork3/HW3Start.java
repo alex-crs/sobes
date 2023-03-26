@@ -23,7 +23,7 @@ public class HW3Start {
     static Thread getGamer(Racket racket, Count count) {
         return new Thread(() -> {
             while (count.getCount() < 10) {
-                Table.getTable().action(racket);
+                Ball.getBall().action(racket);
                 count.countUp();
             }
         });
