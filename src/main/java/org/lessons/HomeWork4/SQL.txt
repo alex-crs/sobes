@@ -1,0 +1,133 @@
+Работал с SQLite
+
+База данных:
+
+-- Таблица: movie
+CREATE TABLE movie (
+    id       INTEGER    PRIMARY KEY AUTOINCREMENT,
+    title    TEXT (256) NOT NULL,
+    duration INT        NOT NULL
+);
+
+
+-- Таблица: price_by_time
+CREATE TABLE price_by_time (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    time  TIME    NOT NULL,
+    day   TEXT    REFERENCES session_days (id)
+                  NOT NULL,
+    price INTEGER REFERENCES prices (id)
+                  NOT NULL
+);
+
+
+-- Таблица: prices
+CREATE TABLE prices (
+    id    INTEGER PRIMARY KEY AUTOINCREMENT,
+    price DOUBLE  NOT NULL
+);
+
+
+-- Таблица: session_days
+CREATE TABLE session_days (
+    id    INTEGER PRIMARY KEY ASC ON CONFLICT ROLLBACK AUTOINCREMENT,
+    title TEXT
+);
+
+
+-- Таблица: sessions
+CREATE TABLE sessions (
+    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+    DATE          DATE,
+    movie_id              REFERENCES movie (id),
+    price_list_id         REFERENCES price_by_time (id)
+);
+
+
+-- Таблица: tickets
+CREATE TABLE tickets (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id         REFERENCES sessions (id)
+);
+
+Домашнее задание:
+1. ошибки в расписании (фильмы накладываются друг на друга), отсортированные по возрастанию времени.
+Выводить надо колонки «фильм 1», «время начала», «длительность», «фильм 2», «время начала», «длительность»;
+
+select mt1.title as 'фильм 1',
+ pt1.time as 'время начала',
+ mt1.duration as 'продолжительность',
+ mt2.title as 'фильм 2',
+ pt2.time as 'время начала',
+ mt2.duration as 'продолжительность'
+ from sessions as t1
+
+inner join sessions as t2 on t2.id=(select id from sessions where id>t1.id limit 1)
+inner join price_by_time as pt1 on pt1.id=t1.price_list_id
+inner join price_by_time as pt2 on pt2.id=t2.price_list_id
+inner join movie as mt1 on mt1.id=t1.movie_id
+inner join movie as mt2 on mt2.id=t2.movie_id
+where strftime('%s', pt1.time, '+'|| mt1.duration||' minutes')>strftime('%s', pt2.time)
+
+
+2. перерывы 30 минут и более между фильмами — выводить по уменьшению длительности перерыва.
+Колонки «фильм 1», «время начала», «длительность», «время начала второго фильма», «длительность перерыва»;
+
+
+select mt1.title as 'фильм 1', pt1.time as 'время начала', mt1.duration as 'продолжительность', pt2.time as 'время начала второго фильма', mt2.title as 'фильм 2',
+strftime('%H:%M', pt1.time, '+'|| mt1.duration||' minutes') as 'Время окончания 1 го фильма',
+(strftime('%s', t2.DATE||pt2.time) - strftime('%s', t1.DATE||pt1.time, '+'|| mt1.duration||' minutes'))/60 as break
+from sessions as t1
+inner join sessions as t2 on t2.id=(select id from sessions where id>t1.id limit 1)
+inner join price_by_time as pt1 on pt1.id=t1.price_list_id
+inner join price_by_time as pt2 on pt2.id=t2.price_list_id
+inner join movie as mt1 on mt1.id=t1.movie_id
+inner join movie as mt2 on mt2.id=t2.movie_id
+WHERE (strftime('%H:%M', pt2.time) - strftime('%H:%M', pt1.time, '+'|| mt1.duration||' minutes'))>0
+AND (strftime('%s', t2.DATE||pt2.time) - strftime('%s', t1.DATE||pt1.time, '+'|| mt1.duration||' minutes'))/60>0
+ORDER BY break DESC
+
+3. список фильмов, для каждого — с указанием общего числа посетителей за все время, среднего числа зрителей за сеанс и общей суммы сборов по каждому фильму (отсортировать по убыванию прибыли).
+Внизу таблицы должна быть строчка «итого», содержащая данные по всем фильмам сразу;
+
+select title, sum(tickets) as ticket_sold, sum(proceeds) as proceeds, avg(c) as average_visit from
+(select m.title as title, count(time) as tickets, sum(prices.price) as proceeds, count(time) as c from tickets
+  inner join sessions as s on s.id=tickets.session_id
+  inner join movie as m on m.id=s.movie_id
+  inner join price_by_time as pt on pt.id=s.price_list_id
+  inner join prices on prices.id=pt.price
+  group by time) group by title
+
+
+UNION
+
+select 'Итого', sum(t), sum(pro), avg(con) from
+(select title, sum(tickets) as t, sum(proceeds) as pro, avg(c) as con from
+(select m.title as title, count(time) as tickets, sum(prices.price) as proceeds, count(time) as c from tickets
+  inner join sessions as s on s.id=tickets.session_id
+  inner join movie as m on m.id=s.movie_id
+  inner join price_by_time as pt on pt.id=s.price_list_id
+  inner join prices on prices.id=pt.price
+  group by time) group by title)
+--ORDER BY proceeds DESC
+
+К сожалению при использовании ORDER BY "Итого" также сортируется со всеми строчками... пока не нашел способа оставить его внизу... хотя в MYSQL и других пишут, что это возможно
+
+4. число посетителей и кассовые сборы, сгруппированные по времени начала фильма: с 9 до 15, с 15 до 18, с 18 до 21, с 21 до 00:00 (сколько посетителей пришло с 9 до 15 часов и т.д.).
+
+SELECT
+    case
+        WHEN strftime('%H',time) >= strftime('%H','09:00:00') AND strftime('%H',time) < strftime('%H','15:00:00') THEN 'c 09:00 до 15:00'
+         WHEN strftime('%H',time) >= strftime('%H','15:00:00') AND strftime('%H',time) < strftime('%H','18:00:00') THEN 'с 15:00 до 18:00'
+         WHEN strftime('%H',time) >= strftime('%H','18:00:00') AND strftime('%H',time) < strftime('%H','21:00:00') THEN 'с 18:00 до 21:00'
+         WHEN strftime('%H',time) >= strftime('%H','21:00:00') AND strftime('%H',time) < strftime('%H','24:00:00') THEN 'с 21:00 до 24:00'
+    END as time_int,
+count(title) as ticket_sold,
+sum(prices.price) as proceeds
+
+ from tickets
+inner join sessions as s on s.id=tickets.session_id
+  inner join movie as m on m.id=s.movie_id
+  inner join price_by_time as pt on pt.id=s.price_list_id
+  inner join prices on prices.id=pt.price
+  group by time_int;
