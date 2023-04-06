@@ -18,7 +18,7 @@ public class StudentService {
     private final SessionFactory sessionFactory;
 
     public StudentService() {
-        sessionFactory = HibernateConfig.getSessionFactory();
+        sessionFactory = HibernateConfig.getHibernateConfig().getSessionFactory();
     }
 
     public List<Student> getAllStudents() {
